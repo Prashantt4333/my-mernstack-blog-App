@@ -1,6 +1,5 @@
 const mongoose = require('mongoose')
-import { type } from './../../node_modules/raw-body/index.d';
-import { Timestamp } from './../../node_modules/bson/src/timestamp';
+
 
 const userSchema = new mongoose.Schema({
     username :{
@@ -21,4 +20,4 @@ const userSchema = new mongoose.Schema({
 
 const User = mongoose.model('User',userSchema);
 
-export default model;
+module.exports = User;
