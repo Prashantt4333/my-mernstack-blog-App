@@ -66,4 +66,60 @@ const signin = async (req , res, next) =>{
     }
 }
 
-module.exports = {signup ,signin};
+const google = async (req, res, next) => {
+    const { email, name, googlePhotoUrl } = req.body;
+
+    if (!email || !name) {
+        return next(errorHandler(400, "Email and Name are required"));
+    }
+
+    try {
+        // Check if user exists
+        let user = await User.findOne({ email });
+
+        if (user) {
+            // User already exists, generate a token
+            const token = jwt.sign({ id: user._id }, process.env.JWT_TOKEN);
+
+            // Exclude the password field in the response
+            const { password, ...userWithoutPassword } = user._doc;
+
+            return res
+                .status(200)
+                .cookie('access_token', token, {
+                    httpOnly: true,
+                })
+                .json(userWithoutPassword);
+        }
+
+        // Create a new user if they don't exist
+        const generatedPassword = Math.random().toString(36).slice(-8); // Generate a random password
+        const hashedPassword = bcryptjs.hashSync(generatedPassword, 10);
+
+        const newUser = new User({
+            username: name.toLowerCase().replace(/\s/g, '') + Math.random().toString().slice(-4),
+            email,
+            password: hashedPassword,
+            profilePicture: googlePhotoUrl,
+        });
+
+        await newUser.save();
+
+        // Generate token for new user
+        const token = jwt.sign({ id: newUser._id }, process.env.JWT_TOKEN);
+
+        const { password, ...newUserWithoutPassword } = newUser._doc;
+
+        return res
+            .status(201)
+            .cookie('access_token', token, {
+                httpOnly: true,
+            })
+            .json(newUserWithoutPassword);
+    } catch (error) {
+        next(error);
+    }
+};
+
+
+module.exports = {signup ,signin, google};
